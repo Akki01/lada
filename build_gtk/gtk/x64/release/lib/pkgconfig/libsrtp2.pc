@@ -1,0 +1,9 @@
+prefix=C:/lada/build_gtk_release/gtk/x64/release
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: libsrtp2
+Description: Library for SRTP (Secure Realtime Transport Protocol)
+Version: 2.7.0
+Libs: -L${libdir} -lsrtp2
+Cflags: -I${includedir}

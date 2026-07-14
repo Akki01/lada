@@ -6,4 +6,4 @@ experiments/
 *.pyc
 .idea
 .flatpak-builder
-__pycache__
+__pycache__build_gtk/ 

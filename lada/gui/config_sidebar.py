@@ -11,9 +11,9 @@ from lada import get_available_restoration_models, get_available_detection_model
 here = pathlib.Path(__file__).parent.resolve()
 
 
-@Gtk.Template(filename=here / 'config_sidebar.ui')
+@Gtk.Template(filename=here / "config_sidebar.ui")
 class ConfigSidebar(Gtk.ScrolledWindow):
-    __gtype_name__ = 'ConfigSidebar'
+    __gtype_name__ = "ConfigSidebar"
 
     toggle_button_mosaic_detection = Gtk.Template.Child()
     toggle_button_mosaic_removal = Gtk.Template.Child()
@@ -36,8 +36,12 @@ class ConfigSidebar(Gtk.ScrolledWindow):
         self.init_done = False
 
     def init_sidebar_from_config(self, config: Config):
-        self.toggle_button_mosaic_detection.set_property("active", config.preview_mode == 'mosaic-detection')
-        self.toggle_button_mosaic_removal.set_property("active", config.preview_mode == 'mosaic-removal')
+        self.toggle_button_mosaic_detection.set_property(
+            "active", config.preview_mode == "mosaic-detection"
+        )
+        self.toggle_button_mosaic_removal.set_property(
+            "active", config.preview_mode == "mosaic-removal"
+        )
 
         # init device
         combo_row_gpu_list = Gtk.StringList.new([])
@@ -65,7 +69,9 @@ class ConfigSidebar(Gtk.ScrolledWindow):
         available_detection_models = get_available_detection_models()
         for model_name in available_detection_models:
             combo_row_detection_models_list.append(model_name)
-        self.combo_row_mosaic_detection_models.set_model(combo_row_detection_models_list)
+        self.combo_row_mosaic_detection_models.set_model(
+            combo_row_detection_models_list
+        )
         idx = available_detection_models.index(config.mosaic_detection_model)
         self.combo_row_mosaic_detection_models.set_selected(idx)
 
@@ -78,16 +84,19 @@ class ConfigSidebar(Gtk.ScrolledWindow):
         idx = codecs.index(config.export_codec)
         self.combo_row_export_codec.set_selected(idx)
 
-        self.spin_row_export_crf.set_property('value', config.export_crf)
+        self.spin_row_export_crf.set_property("value", config.export_crf)
 
         self.spin_row_preview_buffer_duration.set_value(config.preview_buffer_duration)
         self.spin_row_clip_max_duration.set_value(config.max_clip_duration)
         self.switch_row_mute_audio.set_active(config.mute_audio)
 
         # init color scheme
-        if config.color_scheme == ColorScheme.LIGHT: self.light_color_scheme_button.set_property("active", True)
-        elif config.color_scheme == ColorScheme.DARK: self.dark_color_scheme_button.set_property("active", True)
-        else: self.system_color_scheme_button.set_property("active", True)
+        if config.color_scheme == ColorScheme.LIGHT:
+            self.light_color_scheme_button.set_property("active", True)
+        elif config.color_scheme == ColorScheme.DARK:
+            self.dark_color_scheme_button.set_property("active", True)
+        else:
+            self.system_color_scheme_button.set_property("active", True)
 
         self.init_done = True
 
@@ -114,10 +123,10 @@ class ConfigSidebar(Gtk.ScrolledWindow):
         enable_mosaic_detection = button_clicked.get_property("active")
         if enable_mosaic_detection:
             self.toggle_button_mosaic_removal.set_property("active", False)
-            self._config.preview_mode = 'mosaic-detection'
+            self._config.preview_mode = "mosaic-detection"
         else:
             self.toggle_button_mosaic_removal.set_property("active", True)
-            self._config.preview_mode = 'mosaic-removal'
+            self._config.preview_mode = "mosaic-removal"
 
     @Gtk.Template.Callback()
     @skip_if_uninitialized
@@ -125,20 +134,24 @@ class ConfigSidebar(Gtk.ScrolledWindow):
         enable_mosaic_removal = button_clicked.get_property("active")
         if enable_mosaic_removal:
             self.toggle_button_mosaic_detection.set_property("active", False)
-            self._config.preview_mode = 'mosaic-removal'
+            self._config.preview_mode = "mosaic-removal"
         else:
             self.toggle_button_mosaic_detection.set_property("active", True)
-            self._config.preview_mode = 'mosaic-detection'
+            self._config.preview_mode = "mosaic-detection"
 
     @Gtk.Template.Callback()
     @skip_if_uninitialized
     def combo_row_mosaic_removal_models_selected_callback(self, combo_row, value):
-        self._config.mosaic_restoration_model = combo_row.get_property("selected_item").get_string()
+        self._config.mosaic_restoration_model = combo_row.get_property(
+            "selected_item"
+        ).get_string()
 
     @Gtk.Template.Callback()
     @skip_if_uninitialized
     def combo_row_mosaic_detection_models_selected_callback(self, combo_row, value):
-        self._config.mosaic_detection_model = combo_row.get_property("selected_item").get_string()
+        self._config.mosaic_detection_model = combo_row.get_property(
+            "selected_item"
+        ).get_string()
 
     @Gtk.Template.Callback()
     @skip_if_uninitialized

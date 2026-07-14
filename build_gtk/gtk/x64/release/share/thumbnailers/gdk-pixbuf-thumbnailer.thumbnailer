@@ -1,0 +1,4 @@
+[Thumbnailer Entry]
+TryExec=C:/lada/build_gtk_release/gtk/x64/release/bin/gdk-pixbuf-thumbnailer
+Exec=C:/lada/build_gtk_release/gtk/x64/release/bin/gdk-pixbuf-thumbnailer -s %s %u %o
+MimeType=image/gif;image/jpeg;image/png;image/svg;image/svg+xml;image/svg+xml-compressed;image/svg-xml;image/tiff;image/vnd.adobe.svg+xml;text/xml-svg;

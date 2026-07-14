@@ -1,0 +1,12 @@
+prefix=C:/lada/build_gtk_release/gtk/x64/release
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+modules=1
+
+Name: libXML
+Description: libXML library version2.
+Version: 2.15.1
+Libs: -L${libdir} -lxml2
+Libs.private: -lbcrypt -liconv
+Cflags: -I${includedir}/libxml2

@@ -13,12 +13,21 @@ from lada.lib import VideoMetadata, audio_utils
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=LOG_LEVEL)
 
+
 class PipelineState(Enum):
     PLAYING = 1
     PAUSED = 2
 
+
 class PipelineManager(GObject.Object):
-    def __init__(self, video_metadata: VideoMetadata, frame_restorer_provider: FrameRestorerProvider, buffer_queue_min_thresh_time, buffer_queue_max_thresh_time, muted: bool):
+    def __init__(
+        self,
+        video_metadata: VideoMetadata,
+        frame_restorer_provider: FrameRestorerProvider,
+        buffer_queue_min_thresh_time,
+        buffer_queue_max_thresh_time,
+        muted: bool,
+    ):
         super().__init__()
         self.frame_restorer_app_src: FrameRestorerAppSrc | None = None
         self.video_metadata: VideoMetadata = video_metadata
@@ -27,7 +36,9 @@ class PipelineManager(GObject.Object):
         self.buffer_queue_max_thresh_time = buffer_queue_max_thresh_time
         self._paintable: Gdk.Paintable | None
         self._state: PipelineState = PipelineState.PAUSED
-        self.has_audio = audio_utils.get_audio_codec(self.video_metadata.video_file) is not None
+        self.has_audio = (
+            audio_utils.get_audio_codec(self.video_metadata.video_file) is not None
+        )
         self._muted: bool = muted
 
         self.audio_uridecodebin: Gst.UriDecodeBin | None = None
@@ -88,14 +99,16 @@ class PipelineManager(GObject.Object):
                 self.state = PipelineState.PAUSED
                 self.emit("eos")
             case Gst.MessageType.ERROR:
-                (err, _) = msg.parse_error()
+                err, _ = msg.parse_error()
                 logger.error(f"Error from {msg.src.get_path_string()}: {err}")
             case Gst.MessageType.STATE_CHANGED:
                 if msg.src == self.pipeline:
                     old_state, new_state, pending_state = msg.parse_state_changed()
                     if old_state == Gst.State.PAUSED and new_state == Gst.State.PLAYING:
                         self.state = PipelineState.PLAYING
-                    elif old_state == Gst.State.PLAYING and new_state == Gst.State.PAUSED:
+                    elif (
+                        old_state == Gst.State.PLAYING and new_state == Gst.State.PAUSED
+                    ):
                         self.state = PipelineState.PAUSED
 
             case Gst.MessageType.STREAM_STATUS:
@@ -125,21 +138,29 @@ class PipelineManager(GObject.Object):
         # I did not notice it on smaller/shorter files but on long files (>3h) I could reproduce this issue pretty consistently.
         # Shouldn't be necessary and I don't understand how it helps but apparently it does.
         self.pipeline.set_state(Gst.State.PAUSED)
-        self.pipeline.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_position_ns)
+        self.pipeline.seek_simple(
+            Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_position_ns
+        )
         logger.debug("returned from pipeline.seek_simple()")
         self.pipeline.set_state(Gst.State.PLAYING)
 
     def pipeline_add_audio(self):
-        audio_queue = Gst.ElementFactory.make('queue', None)
-        audio_queue.set_property('max-size-bytes', 0)
-        audio_queue.set_property('max-size-buffers', 0)
-        audio_queue.set_property('max-size-time', self.buffer_queue_max_thresh_time * Gst.SECOND)  # ns
-        audio_queue.set_property('min-threshold-time', self.buffer_queue_min_thresh_time * Gst.SECOND)
+        audio_queue = Gst.ElementFactory.make("queue", None)
+        audio_queue.set_property("max-size-bytes", 0)
+        audio_queue.set_property("max-size-buffers", 0)
+        audio_queue.set_property(
+            "max-size-time", self.buffer_queue_max_thresh_time * Gst.SECOND
+        )  # ns
+        audio_queue.set_property(
+            "min-threshold-time", self.buffer_queue_min_thresh_time * Gst.SECOND
+        )
         self.pipeline.add(audio_queue)
         self.pipeline_audio_elements.append(audio_queue)
 
-        audio_uridecodebin = Gst.ElementFactory.make('uridecodebin', None)
-        audio_uridecodebin.set_property('uri', pathlib.Path(self.video_metadata.video_file).resolve().as_uri())
+        audio_uridecodebin = Gst.ElementFactory.make("uridecodebin", None)
+        audio_uridecodebin.set_property(
+            "uri", pathlib.Path(self.video_metadata.video_file).resolve().as_uri()
+        )
 
         def on_pad_added(decodebin, decoder_src_pad, audio_queue):
             caps = decoder_src_pad.get_current_caps()
@@ -155,20 +176,20 @@ class PipelineManager(GObject.Object):
         self.pipeline.add(audio_uridecodebin)
         self.pipeline_audio_elements.append(audio_uridecodebin)
 
-        audio_audioconvert = Gst.ElementFactory.make('audioconvert', None)
+        audio_audioconvert = Gst.ElementFactory.make("audioconvert", None)
         self.pipeline.add(audio_audioconvert)
         self.pipeline_audio_elements.append(audio_audioconvert)
 
-        audio_audioresample = Gst.ElementFactory.make('audioresample', None)
+        audio_audioresample = Gst.ElementFactory.make("audioresample", None)
         self.pipeline.add(audio_audioresample)
         self.pipeline_audio_elements.append(audio_audioresample)
 
-        audio_volume = Gst.ElementFactory.make('volume', None)
+        audio_volume = Gst.ElementFactory.make("volume", None)
         audio_volume.set_property("mute", self._muted)
         self.pipeline.add(audio_volume)
         self.pipeline_audio_elements.append(audio_volume)
 
-        audio_sink = Gst.ElementFactory.make('autoaudiosink', None)
+        audio_sink = Gst.ElementFactory.make("autoaudiosink", None)
         self.pipeline.add(audio_sink)
         self.pipeline_audio_elements.append(audio_sink)
 
@@ -184,34 +205,46 @@ class PipelineManager(GObject.Object):
         self.audio_buffer_queue = audio_queue
 
     def pipeline_add_video(self):
-        self.frame_restorer_app_src = FrameRestorerAppSrc(self.video_metadata, self.frame_restorer_provider, lambda: self.emit("waiting-for-data", False))
+        self.frame_restorer_app_src = FrameRestorerAppSrc(
+            self.video_metadata,
+            self.frame_restorer_provider,
+            lambda: self.emit("waiting-for-data", False),
+        )
         appsrc = self.frame_restorer_app_src.appsrc
         self.pipeline.add(appsrc)
 
-        buffer_queue = Gst.ElementFactory.make('queue', None)
-        buffer_queue.set_property('max-size-bytes', 0)
-        buffer_queue.set_property('max-size-buffers', 0)
-        buffer_queue.set_property('max-size-time', self.buffer_queue_max_thresh_time * Gst.SECOND)  # ns
-        buffer_queue.set_property('min-threshold-time', self.buffer_queue_min_thresh_time * Gst.SECOND)
+        buffer_queue = Gst.ElementFactory.make("queue", None)
+        buffer_queue.set_property("max-size-bytes", 0)
+        buffer_queue.set_property("max-size-buffers", 0)
+        buffer_queue.set_property(
+            "max-size-time", self.buffer_queue_max_thresh_time * Gst.SECOND
+        )  # ns
+        buffer_queue.set_property(
+            "min-threshold-time", self.buffer_queue_min_thresh_time * Gst.SECOND
+        )
 
-        buffer_queue.connect("underrun", lambda queue: self.emit("waiting-for-data", True))
-        buffer_queue.connect("overrun", lambda queue: self.emit("waiting-for-data", False))
+        buffer_queue.connect(
+            "underrun", lambda queue: self.emit("waiting-for-data", True)
+        )
+        buffer_queue.connect(
+            "overrun", lambda queue: self.emit("waiting-for-data", False)
+        )
         self.pipeline.add(buffer_queue)
 
-        gtksink = Gst.ElementFactory.make('gtk4paintablesink', None)
-        paintable = gtksink.get_property('paintable')
+        gtksink = Gst.ElementFactory.make("gtk4paintablesink", None)
+        paintable = gtksink.get_property("paintable")
         # TODO: workaround for #62. On Windows using Nvidia GPU and OpenGL for the paintable when it's available causes messed up colors.
         #  I could not reproduce this on a VM without a Nvidia card.
-        if paintable.props.gl_context and sys.platform != 'win32':
-            video_sink = Gst.ElementFactory.make('glsinkbin', None)
-            video_sink.set_property('sink', gtksink)
+        if paintable.props.gl_context and sys.platform != "win32":
+            video_sink = Gst.ElementFactory.make("glsinkbin", None)
+            video_sink.set_property("sink", gtksink)
         else:
             video_sink = Gst.Bin.new()
-            convert = Gst.ElementFactory.make('videoconvert', None)
+            convert = Gst.ElementFactory.make("videoconvert", None)
             video_sink.add(convert)
             video_sink.add(gtksink)
             convert.link(gtksink)
-            video_sink.add_pad(Gst.GhostPad.new('sink', convert.get_static_pad('sink')))
+            video_sink.add_pad(Gst.GhostPad.new("sink", convert.get_static_pad("sink")))
         self.pipeline.add(video_sink)
 
         appsrc.link(buffer_queue)
@@ -228,18 +261,38 @@ class PipelineManager(GObject.Object):
         self.audio_volume = None
         self.audio_buffer_queue = None
 
-    def adjust_pipeline_with_new_source_file(self, video_metadata: VideoMetadata):
+    def set_source_file(self, video_metadata: VideoMetadata):
+        # Neues Video-Metadaten übernehmen
         self.video_metadata = video_metadata
+
+        # AppSrc neu initialisieren (Video-Frames)
         self.frame_restorer_app_src.reinit(self.video_metadata)
+
+        # Prüfen, ob vorher Audio vorhanden war
         audio_pipeline_already_added = self.has_audio
-        self.has_audio = audio_utils.get_audio_codec(self.video_metadata.video_file) is not None
+
+        # Neue Audio-Erkennung
+        self.has_audio = (
+            audio_utils.get_audio_codec(self.video_metadata.video_file) is not None
+        )
+
+        # Wenn das neue Video Audio hat
         if self.has_audio:
             if audio_pipeline_already_added:
-                self.audio_uridecodebin.set_property('uri', pathlib.Path(self.video_metadata.video_file).resolve().as_uri())
+                # Nur URI wechseln → Warm-Start
+                self.audio_uridecodebin.set_property(
+                    "uri",
+                    pathlib.Path(self.video_metadata.video_file).resolve().as_uri(),
+                )
             else:
+                # Audio-Pipeline hinzufügen
                 self.pipeline_add_audio()
+
+        # Wenn das neue Video KEIN Audio hat
         else:
-            self.pipeline_remove_audio()
+            if audio_pipeline_already_added:
+                # Audio-Pipeline entfernen
+                self.pipeline_remove_audio()
 
     def reinit_appsrc(self):
         self.frame_restorer_app_src.reinit(self.video_metadata)
@@ -249,9 +302,19 @@ class PipelineManager(GObject.Object):
         if res and position >= 0:
             self.pipeline.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, position)
 
-    def update_gst_buffers(self, buffer_queue_min_thresh_time, buffer_queue_max_thresh_time):
-        self.video_buffer_queue.set_property('max-size-time', buffer_queue_max_thresh_time * Gst.SECOND)
-        self.video_buffer_queue.set_property('min-threshold-time', buffer_queue_min_thresh_time * Gst.SECOND)
+    def update_gst_buffers(
+        self, buffer_queue_min_thresh_time, buffer_queue_max_thresh_time
+    ):
+        self.video_buffer_queue.set_property(
+            "max-size-time", buffer_queue_max_thresh_time * Gst.SECOND
+        )
+        self.video_buffer_queue.set_property(
+            "min-threshold-time", buffer_queue_min_thresh_time * Gst.SECOND
+        )
         if self.has_audio:
-            self.audio_buffer_queue.set_property('max-size-time', buffer_queue_max_thresh_time * Gst.SECOND)
-            self.audio_buffer_queue.set_property('min-threshold-time', buffer_queue_min_thresh_time * Gst.SECOND)
+            self.audio_buffer_queue.set_property(
+                "max-size-time", buffer_queue_max_thresh_time * Gst.SECOND
+            )
+            self.audio_buffer_queue.set_property(
+                "min-threshold-time", buffer_queue_min_thresh_time * Gst.SECOND
+            )

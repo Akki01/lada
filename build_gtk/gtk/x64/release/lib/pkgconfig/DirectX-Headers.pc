@@ -1,0 +1,10 @@
+prefix=C:/lada/build_gtk_release/gtk/x64/release
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: DirectX-Headers
+Description: Headers for using D3D12
+URL: https://github.com/microsoft/DirectX-Headers
+Version: 1.618.2
+Libs: -L${libdir} -ld3dx12-format-properties -lDirectX-Guids
+Cflags: -I${includedir}

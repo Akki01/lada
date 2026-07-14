@@ -1,0 +1,9 @@
+prefix=C:/lada/build_gtk_release/gtk/x64/release
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: orc-test
+Description: Test Library of Optimized Inner Loops Runtime Compiler
+Version: 0.4.41
+Libs: -L${libdir} -lorc-test-0.4 -lorc-0.4
+Cflags: -I${includedir}/orc-0.4

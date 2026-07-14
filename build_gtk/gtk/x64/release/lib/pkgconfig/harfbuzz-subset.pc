@@ -1,0 +1,10 @@
+prefix=C:/lada/build_gtk_release/gtk/x64/release
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: harfbuzz-subset
+Description: HarfBuzz font subsetter
+Version: 12.3.0
+Requires: harfbuzz =  12.3.0
+Libs: -L${libdir} -lharfbuzz-subset
+Cflags: -I${includedir}/harfbuzz
